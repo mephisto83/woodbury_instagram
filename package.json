@@ -1,0 +1,23 @@
+{
+  "name": "woodbury-ext-instagram",
+  "version": "1.0.0",
+  "description": "Post images to Instagram via browser automation",
+  "main": "index.js",
+  "type": "module",
+  "woodbury": {
+    "name": "instagram",
+    "displayName": "Instagram Poster",
+    "description": "Post images to Instagram via browser automation. Automates the Instagram web interface to upload images with captions.",
+    "provides": ["tools", "prompts"],
+    "env": {}
+  },
+  "keywords": [
+    "woodbury",
+    "extension",
+    "instagram",
+    "social-media",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT"
+}
