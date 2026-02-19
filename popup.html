@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Woodbury Instagram</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📸 Woodbury Instagram</h1>
+      <p class="subtitle">Post to Instagram from your browser</p>
+    </header>
+
+    <div id="status-bar" class="status-bar hidden">
+      <span id="status-icon">⏳</span>
+      <span id="status-text">Ready</span>
+    </div>
+
+    <main>
+      <!-- Image Selection -->
+      <section class="section">
+        <label class="label">Image</label>
+        <div class="image-upload" id="image-upload">
+          <div id="image-preview" class="image-preview hidden">
+            <img id="preview-img" src="" alt="Preview">
+            <button id="remove-image" class="remove-btn" title="Remove image">×</button>
+          </div>
+          <div id="upload-prompt" class="upload-prompt">
+            <span class="upload-icon">📷</span>
+            <span>Click to select an image</span>
+            <span class="hint">or paste a URL below</span>
+          </div>
+          <input type="file" id="file-input" accept="image/*" hidden>
+        </div>
+        
+        <div class="url-input-group">
+          <input type="text" id="image-url" placeholder="Or paste image URL here..." class="text-input">
+          <button id="load-url" class="btn btn-small">Load</button>
+        </div>
+      </section>
+
+      <!-- Caption -->
+      <section class="section">
+        <label class="label" for="caption">Caption</label>
+        <textarea 
+          id="caption" 
+          class="text-input textarea" 
+          placeholder="Write a caption..." 
+          rows="4"
+          maxlength="2200"
+        ></textarea>
+        <div class="char-count">
+          <span id="char-count">0</span>/2200
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <section class="section actions">
+        <button id="post-btn" class="btn btn-primary" disabled>
+          <span id="post-btn-text">Post to Instagram</span>
+          <span id="post-btn-spinner" class="spinner hidden"></span>
+        </button>
+      </section>
+    </main>
+
+    <footer>
+      <div id="connection-status" class="connection-status">
+        <span id="connection-dot" class="dot"></span>
+        <span id="connection-text">Checking Instagram...</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+/* Woodbury Instagram - Content Script Styles */
+
+/* These styles are injected into Instagram pages */
+
+/* Debug overlay (optional - for development) */
+.woodbury-debug-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 999999;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.woodbury-debug-overlay.hidden {
+  display: none;
+}
+
+/* Status indicator */
+.woodbury-status-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: woodbury-slide-in 0.3s ease-out;
+}
+
+@keyframes woodbury-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.woodbury-status-indicator .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: woodbury-spin 0.8s linear infinite;
+}
+
+@keyframes woodbury-spin {
+  to { transform: rotate(360deg); }
+}
+
+.woodbury-status-indicator.success {
+  background: #4caf50;
+}
+
+.woodbury-status-indicator.error {
+  background: #f44336;
+}
+
+/* Highlight effect for elements being interacted with */
+.woodbury-highlight {
+  outline: 3px solid #0095f6 !important;
+  outline-offset: 2px !important;
+  animation: woodbury-pulse 1s ease-in-out infinite;
+}
+
+@keyframes woodbury-pulse {
+  0%, 100% {
+    outline-color: #0095f6;
+  }
+  50% {
+    outline-color: #00d4ff;
+  }
+}
