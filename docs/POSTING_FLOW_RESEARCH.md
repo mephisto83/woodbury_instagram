@@ -1,300 +1,323 @@
 # Instagram Posting Flow - Detailed Research
 
-> Research conducted 2024-02-20 by exploring instagram.com web interface
+> Research conducted 2024-02-22 by exploring instagram.com web interface
+> Updated with precise coordinates and DOM selectors from browser automation testing
 
 ## Overview
 
 This document details the complete flow for posting images/videos to Instagram via the web interface, including exact selectors, coordinates, and automation strategies.
 
+---
+
+## CRITICAL: Exact Screen Coordinates
+
+With Chrome UI offset of **121px** (tabs + address bar):
+
+| Element | Viewport (left, top) | Screen (x, y) | Size |
+|---------|---------------------|---------------|------|
+| Create button | (24, 642) | (36, 819) | 24x24 |
+| Post option (submenu) | (28, 694) | (94, 869) | 132x20 |
+| Select from computer | (939, 623) | (1028, 804) | 179x32 |
+| Dialog center | - | (1028, 717) | 895x938 |
+
+---
+
 ## Post Creation Flow
 
-### Step 1: Open Create Post Modal
+### Step 1: Click Create Button
 
-**Method A: Click Create in Sidebar**
-1. The sidebar has navigation items. The "Create" button (7th item) has selector:
-   - `div:nth-of-type(7) > div > span > div > a` (when sidebar is expanded)
-   - Contains SVG with `aria-label="New post"`
-   - Text: "New postCreate"
+**Location:** Left sidebar, 7th navigation item
 
-2. **Important Discovery**: Clicking "Create" opens a **submenu** with two options:
-   - **"Post"** - For regular image/video posts
-   - **"AI"** - Links to Instagram AI Studio
+**Selectors:**
+- SVG icon: `svg[aria-label="New post"]`
+- Parent link: `div:nth-of-type(7) > div > span > div > a`
+- Text: "New postCreate"
 
-3. Click **"Post"** to open the Create modal:
-   - Selector: `div > div > div > div:nth-of-type(1) > a:nth-of-type(1)`
-   - Text: "PostPost"
+**Position:**
+- Viewport: `left=24, top=642, width=24, height=24`
+- Screen coords: `(36, 819)` 
 
-**Method B: Direct URL**
-- There is no direct URL to open the create modal (it's a client-side overlay)
+**Code:**
+```javascript
+// Option 1: Mouse click (most reliable)
+mouse({ action: "click", x: 36, y: 819, delayMs: 1500 })
 
-### Step 2: Create New Post Modal
+// Option 2: DOM click (sometimes doesn't trigger)
+browser_query({ action: "click_element", selector: "div:nth-of-type(7) > div > span > div > a" })
+```
 
-**Modal Structure:**
-- `role="dialog"` with `aria-label="Create new post"`
-- Title: "Create new post"
+---
+
+### Step 2: Click "Post" in Submenu
+
+**IMPORTANT:** After clicking Create, a small popup menu appears with two options:
+- **Post** - Opens the create post modal
+- **AI** - Opens AI generation feature
+
+**Selectors for "Post" option:**
+- Text span: `span` containing "Post" 
+- SVG: `svg[aria-label="Post"]`
+- Container: `a:nth-of-type(1) > div > div > div > div:nth-of-type(2)`
+
+**Position:**
+- Viewport: `left=28, top=694, width=132, height=20`
+- Screen coords: `(94, 869)`
+
+**Code:**
+```javascript
+// Wait for submenu to appear (500-1000ms)
+mouse({ action: "click", x: 94, y: 869, delayMs: 1500 })
+```
+
+---
+
+### Step 3: Create New Post Dialog
+
+**Dialog appears with:**
+- `role="dialog"` 
+- `aria-label="Create new post"`
 - Size: ~895x938 pixels
+- Position: `left=581, top=83`
 
-**Elements:**
-- **Drag/Drop Zone**: Icon and text "Drag photos and videos here"
-- **Select Button**: `button` with text "Select from computer"
-  - Position: (1028, 639)
-  - Size: 179x32
-  - Selector: `div > div > div:nth-of-type(2) > div > button`
-- **File Input**: Hidden `input[type="file"]` elements (multiple for different contexts)
-  - Selector: `div > div:nth-of-type(2) > div:nth-of-type(1) > form > input`
+**Contents:**
 
-### Step 3: File Selection
+| Element | Selector | Position (viewport) | Size |
+|---------|----------|---------------------|------|
+| Title | (header text) | - | - |
+| Media Icon | SVG | - | - |
+| Instructions | text | - | "Drag photos and videos here" |
+| **Select from computer** | `div > div > div:nth-of-type(2) > div > button` | (939, 623) | 179x32 |
+| Hidden file input | `form > input` | (0, 0) | Hidden |
 
-**Triggering File Picker:**
-1. Clicking "Select from computer" button doesn't always work via DOM click
-2. **Working approach**: Use keyboard after focusing the button:
-   - Tab to button
-   - Press Enter
-   - This opens the macOS file picker
+**Dialog selectors:**
+```css
+/* The dialog itself */
+div[aria-label="Create new post"]
+[role='dialog']
 
-**File Modal Operation (macOS):**
+/* Select from computer button */
+[role='dialog'] button
+div > div > div:nth-of-type(2) > div > button
+
+/* File input (hidden) */
+[role='dialog'] form input
+```
+
+---
+
+### Step 4: File Selection
+
+**Method A: Click "Select from computer"**
+```javascript
+mouse({ action: "click", x: 1028, y: 804, delayMs: 1000 })
+// This opens the macOS file picker
+```
+
+**Method B: OS File Modal (macOS)**
+
+Using `flow-frame-core`'s `fileModalOperate()`:
 1. Press `Cmd+Shift+G` to open "Go to Folder" dialog
 2. Type/paste the full file path
 3. Press Enter (navigates to file)
 4. Press Enter again (selects file)
 
-This is exactly what `flow-frame-core`'s `fileModalOperate()` function does.
+```javascript
+// flow-frame-core pattern
+keyboard({ action: "hotkey", key: "g", ctrl: true, shift: true })
+// Wait 500ms
+keyboard({ action: "type", text: "/path/to/image.png" })
+keyboard({ action: "press", key: "enter" })
+// Wait 500ms  
+keyboard({ action: "press", key: "enter" })
+```
 
-### Step 4: Crop View
+**Method C: Drag and Drop**
+- The dialog supports drag-and-drop of files onto the upload area
+- Less reliable for automation
 
-**Modal Changes:**
+---
+
+### Step 5: Crop View
+
+**Dialog changes to:**
 - `aria-label="Crop"`
-- Shows uploaded image/video with crop overlay
+- Shows uploaded image with crop overlay
 
 **Elements:**
-- **Back Button**: `button[aria-label="Go back"]` at ~(626, 551)
-- **Next Button**: `div[role="button"]` with text "Next"
-  - Position: ~(1424, 123)
-  - Selector: `div > div > div:nth-of-type(3) > div > div` (in Crop dialog context)
-- **Select Crop**: Button to change aspect ratio
-  - Position: ~(633, 968)
-  - Selector: `div:nth-of-type(1) > div > div:nth-of-type(2) > div > button`
-- **Media Gallery**: Button to add more images
-  - Position: ~(1424, 968)
 
-**Crop Options** (available via Select Crop):
-- Original
-- 1:1 (Square)
+| Element | Purpose | Notes |
+|---------|---------|-------|
+| Back button | Return to upload | `button[aria-label="Go back"]` |
+| Image preview | Shows cropped result | |
+| Crop handles | Resize crop area | |
+| Aspect ratio | Change crop shape | 1:1, 4:5, 16:9, Original |
+| Add more | Add multiple images | |
+| **Next button** | Proceed to edit | `div[role="button"]` containing "Next" |
+
+**Crop aspect ratios:**
+- Original (preserves upload ratio)
+- 1:1 (Square - default for posts)
 - 4:5 (Portrait)
 - 16:9 (Landscape)
 
-### Step 5: Edit View (for Videos)
+---
 
-If uploading a video, shows:
-- **Cover Photo Selection**: Choose video frame or upload custom
-- **Trim**: Adjust video length
-- **Sound Toggle**: On/Off
+### Step 6: Edit/Filter View (Optional)
 
-**Next Button**: ~(1594, 123)
-
-### Step 6: Caption & Details View
-
-**Modal Changes:**
-- Title changes to "New reel" (for videos) or stays "Create new post" (for images)
-- Size expands to ~1235x938
+For images: Shows filters and adjustments
+For videos: Shows cover photo and trim options
 
 **Elements:**
+- Filter options (various Instagram filters)
+- Adjustment sliders
+- **Next button** to proceed
 
-1. **User Avatar & Name**: Shows posting account
-   - Username: mephistophelesporter (example)
+---
 
-2. **Caption Textbox**:
-   - `div[role="textbox"]` with `aria-label="Write a caption..."`
-   - Position: ~(1456, 289)
-   - Size: 339x168
-   - Character limit: 2,200
-   - Counter shows: "0/2,200"
-   - **Emoji Picker**: Available next to caption
+### Step 7: Caption & Details View
 
-3. **Add Location**:
-   - `input` field
-   - Position: ~(1440, 440)
-   - Selector: `div:nth-of-type(1) > div:nth-of-type(3) > div > label > input`
+**Dialog contents:**
 
-4. **Add Collaborators**:
-   - `input` field
-   - Position: ~(1440, 484)
-   - Selector: `div:nth-of-type(1) > div:nth-of-type(4) > div > label > input`
+| Element | Selector | Purpose |
+|---------|----------|--------|
+| Caption textbox | `div[aria-label="Write a caption..."]` | Enter caption text |
+| Emoji picker | (button near caption) | Add emojis |
+| Character counter | - | Shows "0/2,200" |
+| Location input | `input` in location section | Add location tag |
+| Collaborators | `input` in collab section | Invite collaborators |
+| Tag people | button | Tag users in image |
+| Share to Facebook | `input[role="switch"]` | Cross-post toggle |
+| Advanced settings | collapsed section | Alt text, comments, likes |
+| **Share button** | Top-right `div[role="button"]` containing "Share" | Publish post |
 
-5. **Share to Facebook Toggle**:
-   - `input[role="switch"]`
-   - Position: ~(1590, 580)
+**Caption textbox:**
+- Character limit: 2,200
+- Supports hashtags, mentions, emojis
+- Line breaks allowed
 
-6. **Advanced Settings** (collapsed by default):
-   - Accessibility alt text
-   - Turn off commenting
-   - Hide like counts
+---
 
-7. **Tags Button**: For tagging people in the photo
-   - Text: "Tags" / "Tag people"
+### Step 8: Publish
 
-### Step 7: Share/Publish
+**Share button:**
+- Located top-right of caption dialog
+- Selector: `div[role="button"]` containing text "Share"
 
-**Share Button:**
-- `div[role="button"]` with text "Share"
-- Position: ~(1590, 123) (top right of dialog)
-- Selector: `div > div > div:nth-of-type(3) > div > div` (in caption dialog context)
+**After clicking Share:**
+1. Dialog shows "Sharing..." progress
+2. On success: "Your post has been shared" confirmation
+3. Dialog closes
+4. Feed may refresh to show new post
 
-**After Sharing:**
-- Modal shows "Sharing..." progress
-- On success: "Your reel has been shared" / "Post shared"
-- Option to view the post
+---
 
-## Key DOM Selectors Summary
-
-| Element | Selector | Notes |
-|---------|----------|-------|
-| Create button (sidebar) | `svg[aria-label="New post"]` | Icon |
-| Post option (submenu) | `a:contains("Post")` | After Create click |
-| Select from computer | `div[role="dialog"] button:contains("Select from computer")` | Modal |
-| File input | `input[type="file"]` | Hidden |
-| Crop Next | `div[aria-label="Crop"] div[role="button"]:contains("Next")` | |
-| Caption textbox | `div[aria-label="Write a caption..."]` | role="textbox" |
-| Location input | `label:contains("Add location") input` | |
-| Share button | `div[role="dialog"] div[role="button"]:contains("Share")` | Final |
-
-## Automation Strategy
-
-### Recommended Approach
-
-1. **Use `browser_query` for element discovery** - Get exact selectors and positions
-2. **Use `browser_query(action="click_element")` for DOM interactions** - Works for most buttons
-3. **Use `mouse` click for file dialog trigger** - DOM click doesn't always work
-4. **Use `keyboard` for file path entry** - Cmd+Shift+G, type path, Enter, Enter
-5. **Use `browser_query(action="set_value")` for text inputs** - Caption, location
-
-### Focus Sandwich Pattern
-
-```
-browser(action="focus", appName="Google Chrome")  // Focus Chrome
-// ... interact with elements ...
-browser(action="focus", appName="Terminal")       // Return focus
-```
-
-### Complete Automation Example
+## Complete Automation Code Example
 
 ```javascript
-// 1. Open Instagram
+// === POST TO INSTAGRAM ===
+
+// 1. Ensure on Instagram
 browser({ action: "open", url: "https://www.instagram.com/", waitMs: 5000 });
 
-// 2. Click Create button
-browser_query({ action: "click_element", selector: "svg[aria-label='New post']" });
-// Wait for submenu
+// 2. Close any open panels (notifications, search)
+keyboard({ action: "press", key: "escape" });
 await pause(500);
 
-// 3. Click "Post" option
-browser_query({ action: "find_element_by_text", text: "Post", tag: "a" });
-browser_query({ action: "click_element", x: result.x, y: result.y });
-// Wait for modal
-await pause(1000);
+// 3. Click Create button  
+mouse({ action: "click", x: 36, y: 819, delayMs: 1500 });
 
-// 4. Open file picker
-browser({ action: "focus", appName: "Google Chrome" });
-keyboard({ action: "press", key: "tab" });
-keyboard({ action: "press", key: "enter" });
-await pause(1000);
+// 4. Click "Post" in submenu
+mouse({ action: "click", x: 94, y: 869, delayMs: 1500 });
 
-// 5. Navigate to file
-keyboard({ action: "hotkey", key: "g", ctrl: true, shift: true });
+// 5. Wait for dialog and click "Select from computer"
+await waitForElement('[role="dialog"]');
+mouse({ action: "click", x: 1028, y: 804, delayMs: 1000 });
+
+// 6. Handle file picker (macOS)
+keyboard({ action: "hotkey", key: "g", cmd: true, shift: true });
 await pause(500);
-keyboard({ action: "type", text: "/path/to/image.jpg" });
+keyboard({ action: "type", text: "/Users/user/Pictures/photo.jpg" });
 keyboard({ action: "press", key: "enter" });
 await pause(500);
 keyboard({ action: "press", key: "enter" });
 await pause(2000);
 
-// 6. Skip crop (click Next)
-browser_query({ action: "find_interactive", description: "Next button in Crop dialog" });
-browser_query({ action: "click_element", x: result.x, y: result.y });
-await pause(1000);
+// 7. Click Next (skip crop)
+browser_query({ action: "find_interactive", description: "Next button" });
+mouse({ action: "click", position: result.bounds, delayMs: 1000 });
 
-// 7. Add caption
+// 8. Click Next (skip filters)
+browser_query({ action: "find_interactive", description: "Next button" });
+mouse({ action: "click", position: result.bounds, delayMs: 1000 });
+
+// 9. Enter caption
 browser_query({ action: "click_element", selector: "div[aria-label='Write a caption...']" });
-keyboard({ action: "type", text: "My awesome post! #instagram #automation" });
+keyboard({ action: "type", text: "My awesome photo! #photography #instagram" });
 
-// 8. Share
+// 10. Click Share
 browser_query({ action: "find_interactive", description: "Share button" });
-browser_query({ action: "click_element", x: result.x, y: result.y });
+mouse({ action: "click", position: result.bounds, delayMs: 2000 });
+
+// Done! Post is published
 ```
 
-## Challenges & Solutions
+---
 
-### Challenge 1: Create button submenu
-**Problem**: Clicking "Create" opens a submenu, not directly the modal
-**Solution**: After clicking Create, wait for submenu and click "Post"
+## Key Selectors Quick Reference
 
-### Challenge 2: File input doesn't respond to programmatic clicks
-**Problem**: `browser_query(action="click_element")` on "Select from computer" doesn't always open file picker
-**Solution**: Use Tab + Enter keyboard navigation, or click with `mouse` tool
+```css
+/* Navigation */
+svg[aria-label="New post"]              /* Create button icon */
+div:nth-of-type(7) > div > span > div > a /* Create button link */
 
-### Challenge 3: File dialog is OS-level
-**Problem**: Can't interact with macOS file picker via DOM
-**Solution**: Use `flow-frame-core`'s `fileModalOperate()` or keyboard shortcuts:
-  - Cmd+Shift+G → Type path → Enter → Enter
+/* Create submenu */
+svg[aria-label="Post"]                  /* Post option icon */
+a:nth-of-type(1)                         /* Post option link (first in submenu) */
 
-### Challenge 4: Dynamic selectors
-**Problem**: Instagram uses generated class names that change
-**Solution**: Use stable attributes:
-  - `aria-label`
-  - `role`
-  - Text content
-  - Relative position selectors
+/* Create dialog */
+div[aria-label="Create new post"]       /* Dialog container */
+[role='dialog']                          /* Any dialog */
+[role='dialog'] button                   /* Select from computer */
 
-### Challenge 5: React event handling
-**Problem**: Some elements need real mouse events, not just DOM clicks
-**Solution**: Use `mouse` tool with flow-frame's Chrome offset compensation
+/* Crop view */
+div[aria-label="Crop"]                  /* Crop dialog */
+button[aria-label="Go back"]            /* Back button */
 
-## Page Structure Reference
+/* Caption view */
+div[aria-label="Write a caption..."]    /* Caption textbox */
 
+/* Action buttons (find by text) */
+div[role="button"]                      /* All buttons - filter by text */
 ```
-instagram.com/
-├── Left Sidebar (navigation)
-│   ├── Instagram logo (home link)
-│   ├── Home
-│   ├── Reels
-│   ├── Messages
-│   ├── Search
-│   ├── Explore  
-│   ├── Notifications
-│   ├── Create → Opens submenu
-│   │   ├── Post → Opens Create modal
-│   │   └── AI → Links to aistudio.instagram.com
-│   ├── Profile
-│   └── More (settings)
-├── Main Feed (center)
-└── Suggestions (right sidebar)
 
-Create Modal Flow:
-├── Step 1: Upload
-│   ├── Drag/drop zone
-│   └── "Select from computer" button
-├── Step 2: Crop
-│   ├── Image preview with crop handles
-│   ├── Aspect ratio selector
-│   └── Next button
-├── Step 3: Edit (videos only)
-│   ├── Cover photo selector
-│   ├── Trim control
-│   └── Sound toggle
-└── Step 4: Caption & Share
-    ├── Caption textbox (2200 char limit)
-    ├── Emoji picker
-    ├── Location input
-    ├── Collaborators input
-    ├── Tag people
-    ├── Share to Facebook toggle
-    ├── Advanced settings
-    └── Share button
-```
+---
+
+## Troubleshooting
+
+### Problem: Notifications panel opens instead of Create
+**Solution:** Click elsewhere first to close any open panels, or press Escape
+
+### Problem: DOM click doesn't trigger submenu
+**Solution:** Use mouse click with screen coordinates instead of DOM click
+
+### Problem: File picker doesn't open
+**Solution:** Use Tab + Enter after focusing the button, or use direct mouse click
+
+### Problem: Can't interact with file picker
+**Solution:** Use flow-frame-core's fileModalOperate() or keyboard shortcuts
+
+### Problem: Selectors not found
+**Solution:** Instagram uses dynamic class names. Use stable attributes:
+- `aria-label`
+- `role`
+- Text content
+- Structural position (nth-of-type)
+
+---
 
 ## Testing Notes
 
 - Tested on: macOS, Chrome, Instagram web (February 2024)
-- Account logged in as: mephistophelesporter
-- Image uploaded: PNG file from ~/Documents/ai/renders/
-- Video handling: Automatically detected, shows as "New reel" with additional editing options
+- Chrome UI offset: 121px (tabs + address bar)
+- Image formats: PNG, JPEG
+- Video formats: MP4 (shows as "New reel" with additional options)
